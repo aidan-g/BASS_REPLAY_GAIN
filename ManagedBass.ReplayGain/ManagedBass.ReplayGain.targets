@@ -1,0 +1,7 @@
+﻿<Project>
+	<ItemGroup>
+		<None Include="$(MSBuildThisFileDirectory)\bass_replay_gain.dll" Link="bass_replay_gain.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+</Project>

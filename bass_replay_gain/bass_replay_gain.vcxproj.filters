@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="bass_replay_gain.c" />
+    <ClCompile Include="scanner.c" />
+    <ClCompile Include="processor.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\bass\bass.h" />
+    <ClInclude Include="bass_replay_gain.h" />
+    <ClInclude Include="scanner.h" />
+    <ClInclude Include="processor.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\lib\bass.lib" />
+    <Library Include="..\lib\msvcrt.lib" />
+  </ItemGroup>
+</Project>
