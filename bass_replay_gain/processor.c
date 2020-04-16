@@ -110,16 +110,11 @@ BOOL processor_process_channel(REPLAY_GAIN_CONTEXT* contexts, DWORD context_coun
 BOOL processor_init_contexts(REPLAY_GAIN_CONTEXT* contexts, DWORD context_count, DWORD channel_count, DWORD sample_rate) {
 	DWORD position;
 	for (position = 0; position < context_count; position++) {
-		//If a context is already initialized we need to make sure it's compatible with the current stream.
+		//If a context is already initialized and the channel count and sample rate match we don't need to do anything.
 		if (contexts[position].is_initialized) {
-			if (contexts[position].channel_count != channel_count || contexts[position].sample_rate != sample_rate) {
-				//Channel count or sample rate differ.
-#if _DEBUG
-				printf("Cannot initialize context %d/%d as it differs to the previous context %d/%d.\n", channel_count, sample_rate, contexts[position].channel_count, contexts[position].sample_rate);
-#endif
-				return FALSE;
+			if (contexts[position].channel_count == channel_count && contexts[position].sample_rate == sample_rate) {
+				continue;
 			}
-			continue;
 		}
 		//Attempt to initialize the context.
 		if (!scanner_init_context(&contexts[position], channel_count, sample_rate)) {

@@ -190,10 +190,11 @@ BOOL scanner_init_context(REPLAY_GAIN_CONTEXT* context, DWORD channel_count, DWO
 	context->butter_coeff_a = replay_gain_info[position].AButter;
 	context->butter_coeff_b = replay_gain_info[position].BButter;
 
-	context->yule_hist_position = 20;
-	context->butter_hist_position = 4;
-
-	context->is_initialized = TRUE;
+	if (!context->is_initialized) {
+		context->yule_hist_position = 20;
+		context->butter_hist_position = 4;
+		context->is_initialized = TRUE;
+	}
 
 	return TRUE;
 }
