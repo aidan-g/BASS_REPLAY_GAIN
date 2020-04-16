@@ -21,10 +21,13 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	BASS_REPLAY_GAIN_Process(handle, &info);
+	if (!BASS_REPLAY_GAIN_Process(handle, &info)) {
+		printf("Failed to process stream: %d\n", BASS_ErrorGetCode());
+		return 1;
+	}
 
-	printf("Gain: %d\n", info.gain);
-	printf("Peak: %d\n", info.peak);
+	printf("Gain: %f\n", info.gain);
+	printf("Peak: %f\n", info.peak);
 
 	BASS_REPLAY_GAIN_Free();
 	BASS_Free();

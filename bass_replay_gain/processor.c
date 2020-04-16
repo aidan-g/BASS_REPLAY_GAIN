@@ -69,7 +69,6 @@ BOOL processor_process_channel(REPLAY_GAIN_CONTEXT* contexts, DWORD context_coun
 #if _DEBUG
 				printf("BASS_ChannelGetData returned BASS_ERROR_UNKNOWN.\n");
 #endif
-				result = FALSE;
 				break;
 			}
 
