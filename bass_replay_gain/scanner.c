@@ -160,17 +160,26 @@ BOOL scanner_init_context(REPLAY_GAIN_CONTEXT* context, DWORD channel_count, DWO
 	DWORD position;
 
 	if (channel_count != 2) {
-		//Channel count is not supported.
+		//Our algorithms only support left/right but they could be extended, the filters don't care.
+#if _DEBUG
+		printf("Channel count %d is not supported.\n", channel_count);
+#endif
 		return FALSE;
 	}
 
+	//Look for the REPLAY_GAIN_INFO which matches the sample rate.
 	for (position = 0; position < 20; position++) {
-		if (replay_gain_info[position].sample_rate == sample_rate)
+		if (replay_gain_info[position].sample_rate == sample_rate) {
+			//Found it.
 			break;
+		}
 	}
 
 	if (position == 20) {
 		//Sample rate is not supported.
+#if _DEBUG
+		printf("Sample rate %d is not supported.\n", sample_rate);
+#endif
 		return FALSE;
 	}
 
@@ -194,6 +203,7 @@ static void calc_stereo_peak(REPLAY_GAIN_CONTEXT* context, DWORD sample_count)
 	FLOAT peak = 0.0;
 	PFLOAT samples = context->samples_input;
 
+	//Find the largest sample.
 	while (sample_count--) {
 
 		if (samples[0] > peak) {
@@ -213,6 +223,7 @@ static void calc_stereo_peak(REPLAY_GAIN_CONTEXT* context, DWORD sample_count)
 		samples += 2;
 	}
 
+	//If we found a larger peak then store it on the context.
 	if (peak > context->peak) {
 		context->peak = peak;
 	}
@@ -220,6 +231,7 @@ static void calc_stereo_peak(REPLAY_GAIN_CONTEXT* context, DWORD sample_count)
 
 static double calc_stereo_rms(REPLAY_GAIN_CONTEXT* context, DWORD sample_count)
 {
+	//I don't know what this means.
 	double sum = 1e-16;
 	DWORD count = sample_count;
 	PFLOAT samples = context->samples_output;
@@ -230,10 +242,12 @@ static double calc_stereo_rms(REPLAY_GAIN_CONTEXT* context, DWORD sample_count)
 		left = samples[0];
 		right = samples[1];
 
+		//Square and sum the samples.
 		sum += left * left + right * right;
 		samples += 2;
 	}
 
+	//The 90 dB offset is to compensate for the normalized float range and 3 dB is for stereo samples.
 	return 10 * log10(sum / sample_count) + 90.0 - 3.0;
 }
 
@@ -251,13 +265,17 @@ static void butter_filter_stereo_samples(REPLAY_GAIN_CONTEXT* context, DWORD sam
 
 	i = context->butter_hist_position;
 
+	//Check the previous 4 samples for subnormals.
 	for (j = -4; j < 0; ++j) {
 		if (fabs(hist_a[i + j]) > 1e-10 || fabs(hist_b[i + j]) > 1e-10) {
+			//We're OK.
 			break;
 		}
 	}
 
 	if (!j) {
+		//All 4 previous samples were <1e-10.
+		//Clear the history to avoid slow down.
 		memset(context->butter_hist_a, 0, sizeof(context->butter_hist_a));
 		memset(context->butter_hist_b, 0, sizeof(context->butter_hist_b));
 	}
@@ -284,6 +302,8 @@ static void butter_filter_stereo_samples(REPLAY_GAIN_CONTEXT* context, DWORD sam
 		samples += 2;
 
 		if ((i += 2) == 256) {
+			//We reached the end of the history buffer. 
+			//Copy the last 4 values back to the beginning and reset the position.
 			memcpy(hist_a, hist_a + 252, sizeof(*hist_a) * 4);
 			memcpy(hist_b, hist_b + 252, sizeof(*hist_b) * 4);
 			i = 4;
@@ -309,13 +329,17 @@ static void yule_filter_stereo_samples(REPLAY_GAIN_CONTEXT* context, DWORD sampl
 
 	i = context->yule_hist_position;
 
+	//Check the previous 20 samples for subnormals.
 	for (j = -20; j < 0; ++j) {
 		if (fabs(hist_a[i + j]) > 1e-10 || fabs(hist_b[i + j]) > 1e-10) {
+			//We're OK.
 			break;
 		}
 	}
 
 	if (!j) {
+		//All 20 previous samples were <1e-10.
+		//Clear the history to avoid slow down.
 		memset(context->yule_hist_a, 0, sizeof(context->yule_hist_a));
 		memset(context->yule_hist_b, 0, sizeof(context->yule_hist_b));
 	}
@@ -355,7 +379,6 @@ static void yule_filter_stereo_samples(REPLAY_GAIN_CONTEXT* context, DWORD sampl
 		right += hist_b[i - 17] * coeff_b[9] - hist_a[i - 17] * coeff_a[9];
 
 		left += hist_b[i - 20] * coeff_b[10] - hist_a[i - 20] * coeff_a[10];
-
 		right += hist_b[i - 19] * coeff_b[10] - hist_a[i - 19] * coeff_a[10];
 
 		hist_a[i] = (FLOAT)left;
@@ -368,6 +391,8 @@ static void yule_filter_stereo_samples(REPLAY_GAIN_CONTEXT* context, DWORD sampl
 		samples_output += 2;
 
 		if ((i += 2) == 256) {
+			//We reached the end of the history buffer. 
+			//Copy the last 20 values back to the beginning and reset the position.
 			memcpy(hist_a, hist_a + 236, sizeof(*hist_a) * 20);
 			memcpy(hist_b, hist_b + 236, sizeof(*hist_b) * 20);
 			i = 20;
@@ -385,18 +410,23 @@ BOOL scanner_calc_replaygain(REPLAY_GAIN_CONTEXT* context)
 	FLOAT gain;
 	DWORD position;
 
+	//Get the total count of all samples in all slots.
 	for (position = 0; position < HISTOGRAM_SLOTS; position++) {
 		total += histogram[position];
 	}
 
+	//Starting at the loudest slot and count backward until we encounter >= 20 percent of the total. 
 	while (position--) {
-		if ((count += histogram[position]) * 20 >= total) {
+		count += histogram[position];
+		if (count * 20 >= total) {
 			break;
 		}
 	}
 
+	//I don't know what this means.
 	gain = (FLOAT)(64.54 - position / 100.0);
 
+	//Clip to between -24 and 64.
 	if (gain < -24.0) {
 		gain = -24.0;
 	}
@@ -404,6 +434,7 @@ BOOL scanner_calc_replaygain(REPLAY_GAIN_CONTEXT* context)
 		gain = 64.0;
 	}
 
+	//Store the gain on the context.
 	context->gain = gain;
 
 	return TRUE;
@@ -413,13 +444,18 @@ BOOL scanner_process_samples(REPLAY_GAIN_CONTEXT* context, DWORD sample_count)
 {
 	UINT32 level;
 
+	//All routines count left/right as one sample.
 	sample_count = sample_count / 2;
 
+	//Update the peak.
 	calc_stereo_peak(context, sample_count);
+	//Apply the filters.
 	yule_filter_stereo_samples(context, sample_count);
 	butter_filter_stereo_samples(context, sample_count);
+	//Get the RMS level of the current samples.
 	level = (UINT32)floor(100 * calc_stereo_rms(context, sample_count));
 
+	//Clip to between 0 and HISTOGRAM_SLOTS.
 	if (level < 0) {
 		level = 0;
 	}
@@ -427,6 +463,7 @@ BOOL scanner_process_samples(REPLAY_GAIN_CONTEXT* context, DWORD sample_count)
 		level = HISTOGRAM_SLOTS - 1;
 	}
 
+	//Increment the counter for the level.
 	context->histogram[level]++;
 
 	return TRUE;

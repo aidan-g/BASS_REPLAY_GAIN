@@ -7,6 +7,7 @@
 #define BASSREPLAYGAINDEF(f) WINAPI f
 #endif
 
+//The maximum number of channel handles that can be submitted as a batch.
 #define BATCH_SLOTS 256
 
 typedef struct REPLAY_GAIN_INFO {
