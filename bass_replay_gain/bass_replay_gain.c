@@ -60,7 +60,7 @@ BOOL BASSREPLAYGAINDEF(BASS_REPLAY_GAIN_Process)(HSTREAM Handle, REPLAY_GAIN_INF
 	return TRUE;
 }
 
-BOOL BASSREPLAYGAINDEF(BASS_REPLAY_GAIN_ProcessBatch)(HSTREAM Handles[BATCH_SLOTS], REPLAY_GAIN_BATCH_INFO* Result) {
+BOOL BASSREPLAYGAINDEF(BASS_REPLAY_GAIN_ProcessBatch)(HSTREAM Handles[BATCH_SLOTS], DWORD Length, REPLAY_GAIN_BATCH_INFO* Result) {
 	DWORD position = 0;
 	//Create two contexts, the first is the batch context and the second is the channel context.
 	REPLAY_GAIN_CONTEXT contexts[2] = { 0 };
@@ -80,13 +80,15 @@ BOOL BASSREPLAYGAINDEF(BASS_REPLAY_GAIN_ProcessBatch)(HSTREAM Handles[BATCH_SLOT
 		return FALSE;
 	}
 
-	//For each channel handle in the batch...
-	for (position = 0; position < BATCH_SLOTS; position++) {
+	if (Length > BATCH_SLOTS) {
+#if _DEBUG
+		printf("Batch size is too large.\n");
+#endif
+		return FALSE;
+	}
 
-		if (!Handles[position]) {
-			//No more channel handles, all done.
-			break;
-		}
+	//For each channel handle in the batch...
+	for (position = 0; position < Length; position++) {
 
 		//Zero the channel context, it will be re-initialized.
 		memset(&contexts[1], 0, sizeof(REPLAY_GAIN_CONTEXT));

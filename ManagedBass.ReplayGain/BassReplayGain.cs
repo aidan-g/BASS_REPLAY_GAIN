@@ -29,11 +29,11 @@ namespace ManagedBass.ReplayGain
         }
 
         [DllImport(DllName)]
-        static extern bool BASS_REPLAY_GAIN_ProcessBatch(int[] Handles, [Out] out ReplayGainBatchInfo result);
+        static extern bool BASS_REPLAY_GAIN_ProcessBatch([MarshalAs(UnmanagedType.LPArray, SizeConst = BATCH_SLOTS)]int[] Handles, int Length, [Out] out ReplayGainBatchInfo result);
 
         public static bool ProcessBatch(int[] Handles, out ReplayGainBatchInfo info)
         {
-            return BASS_REPLAY_GAIN_ProcessBatch(Handles, out info);
+            return BASS_REPLAY_GAIN_ProcessBatch(Handles, Handles.Length, out info);
         }
 
         [DllImport(DllName)]
