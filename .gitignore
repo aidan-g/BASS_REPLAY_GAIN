@@ -18,7 +18,6 @@ TestResults
 build
 [Dd]ebug/
 [Rr]elease/
-x64/
 *_i.c
 *_p.c
 *.ilk
@@ -122,5 +121,7 @@ runtime_env/
 source/.vs/
 
 #libs
-lib/bass_replay_gain*
-lib/test.exe
+lib/x86/bass_replay_gain*
+lib/x86/test.exe
+lib/x64/bass_replay_gain*
+lib/x64/test.exe
